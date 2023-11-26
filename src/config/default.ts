@@ -14,3 +14,7 @@ export const paymentMethod = {
 } as const;
 
 export const DEFAULT_TRANSACTION_PER_PAGE = 15;
+
+export const DEBOUNCE_DELAY = 1200;
+
+export const DEBOUNCE_DELAY_QUOTE = 600;

@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "./process";
 
 const USER = {
   GET_USER: () => `user`,
@@ -6,13 +5,10 @@ const USER = {
   GEN_APIKEY: () => `user/apikey`,
 };
 
-const AUTH = {
-  LOGIN: () => `auth/signin`,
-  REGISTER_INDIVIDUAL: () => `auth/signup/individual`,
-  REGISTER_BUSINESS: () => `auth/signup/business`,
-  LOGOUT: () => `logout`,
-  VERIFY: (token: string) => `verify/email?token=${token}`,
-};
+const BANK = {
+  GET_BANK_CODE: () => `bank/bankcode`,
+  NAME_ENQUIRY: (bankCode: string, accountNumber: string) => `bank/name-enquiry?bankCode=${bankCode}&accountNumber=${accountNumber}`,
+}
 
 const PRICE = {
   GET_PRICE: (ticker: string) => `price?currency=${ticker}`,
@@ -33,7 +29,7 @@ const WALLET = {
 
 const endpoints = {
   USER,
-  AUTH,
+  BANK,
   PRICE,
   WEBHOOK,
   TRANSACTION,
