@@ -36,7 +36,7 @@ export default async function Home() {
       const res = await axiosInstance.post("quote", data);
       return { success: true, data: res.data.data };
     } catch (error: any) {
-      console.log(error.response);
+      console.error(error.response);
       return { success: false, message: error?.response?.data?.message };
     }
   };
@@ -71,7 +71,7 @@ export default async function Home() {
       const res = await axiosInstance.get(`order?id=${orderId}`);
       return { success: true, data: res.data.data };
     } catch (error: any) {
-      console.log(error.response);
+      console.error(error.response);
       return { success: false, message: error.response.data.message };
     }
   };

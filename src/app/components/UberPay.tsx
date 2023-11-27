@@ -99,22 +99,18 @@ export const UberPay = ({
 
   const enquireName = async (bankCode: string, accountNumber: string) => {
     setNameEnquiry((prev) => ({ ...prev, loading: true }));
-    console.log({nameEnquiry})
     try {
       const res = await axiosInstance.get<BankEnquiryResponse>(
         endpoints.BANK.NAME_ENQUIRY(bankCode, accountNumber)
       );
       const acctName = res.data.data?.accountName;
       if (acctName) {
-        console.log({acctName})
         setNameEnquiry({ loading: false, name: acctName, data: "", error: "" });
-        console.log("got here")
       } else {
         throw new Error("Name not found for this account");
       }
-      console.log("got here")
     } catch (err) {
-      console.log("err from acct name enq", err);
+      console.error("err from acct name enq", err);
       setNameEnquiry(prev => ({
         ...prev, name: "", data: {}, error: "Unable to find account"
       }))
@@ -127,7 +123,6 @@ export const UberPay = ({
       const res = await getQuote({ amount });
       if (res.success) {
         const quote = res;
-        console.log({ quote });
         setQuote({ loading: false, quoteInfo: quote });
       } else {
         setQuote({
@@ -169,7 +164,6 @@ export const UberPay = ({
   const debounceCalculateQuote = useDebouncedCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const amount = e.target.value;
-      console.log("amount I need: ", amount);
       if (amount) {
         calculateQuote(amount);
       }
@@ -213,7 +207,7 @@ export const UberPay = ({
     const id = quote.quoteInfo?.data?.id
     const accountNumber = formData?.get("accountNumber") as string
     if (!id || !accountNumber) {
-      console.log("missing cred")
+      console.error("missing cred")
       return;
     }
     await getOrder({
@@ -294,7 +288,7 @@ export const UberPay = ({
         }
       }
     } catch (err) {
-      console.log(err)
+      console.error(err)
       shouldCheckForPayment = true
     }
     shouldCheckForPayment && setTimeout(async () => {
@@ -307,7 +301,6 @@ export const UberPay = ({
     try {
       const res = await getOrderById(orderId)
       if (res.success && res.data) {
-        console.log(res.data)
         if (res.data.status === "PAID") {
           shouldCheckForPayment = false
           updateOrderStatus("PAID")
@@ -325,7 +318,7 @@ export const UberPay = ({
         }
       }
     } catch (err) {
-      console.log(err)
+      console.error(err)
       shouldCheckForPayment = true
     }
     shouldCheckForPayment && setTimeout(() => {
