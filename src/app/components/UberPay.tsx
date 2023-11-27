@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { BankCode, BankEnquiryResponse } from "@/types/bank";
 import {
   Button,
@@ -10,13 +10,11 @@ import {
   InputGroup,
   InputRightElement,
   Select,
-  Skeleton,
-  SkeletonText,
   Spinner,
   useToast,
 } from "@chakra-ui/react";
 import { useDebouncedCallback } from "use-debounce";
-import { DEBOUNCE_DELAY, DEBOUNCE_DELAY_QUOTE } from "@/config/default";
+import { DEBOUNCE_DELAY, DEBOUNCE_DELAY_QUOTE, POLLING_INTERVAL } from "@/config/default";
 import axiosInstance from "@/services/axios";
 import endpoints from "@/config/endpoints";
 import Image from "next/image";
@@ -24,7 +22,6 @@ import { getOrderProps } from "../page";
 import { Order, PaymentStatus, Quote } from "@/types";
 import QuoteInfo from "./QuoteInfo";
 import OrderModal from "./OrderModal";
-import PayoutModal from "./PayoutModal";
 import { getOrderById, getTxnByOrderId } from "../services/quote";
 
 type UberPayProps = {
@@ -302,7 +299,7 @@ export const UberPay = ({
     }
     shouldCheckForPayment && setTimeout(async () => {
       await checkForPayout(orderId)
-    }, 10000);
+    }, POLLING_INTERVAL);
   }
 
   const checkForPayment = async (orderId: string, expiryTime?: string) => {
@@ -333,7 +330,7 @@ export const UberPay = ({
     }
     shouldCheckForPayment && setTimeout(() => {
       checkForPayment(orderId)
-    }, 10000);
+    }, POLLING_INTERVAL);
   }
 
   const reset = () => {
