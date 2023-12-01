@@ -14,7 +14,11 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { useDebouncedCallback } from "use-debounce";
-import { DEBOUNCE_DELAY, DEBOUNCE_DELAY_QUOTE, POLLING_INTERVAL } from "@/config/default";
+import {
+  DEBOUNCE_DELAY,
+  DEBOUNCE_DELAY_QUOTE,
+  POLLING_INTERVAL,
+} from "@/config/default";
 import axiosInstance from "@/services/axios";
 import endpoints from "@/config/endpoints";
 import Image from "next/image";
@@ -41,32 +45,28 @@ type UberPayProps = {
   }>;
 };
 
-export type OrderState = (Order & {quote: Quote["data"]}) | null
+export type OrderState = (Order & { quote: Quote["data"] }) | null;
 
 export type NameEnquiry = {
-  loading: boolean,
-    name: string,
-    data: any,
-    error: string,
-}
+  loading: boolean;
+  name: string;
+  data: any;
+  error: string;
+};
 
 export type ModalState = {
-  isOpen: boolean,
-  step: "ORDER" | "PAYOUT",
-  state: "PENDING" | "PAID" | "FAILED",
-}
+  isOpen: boolean;
+  step: "ORDER" | "PAYOUT";
+  state: "PENDING" | "PAID" | "FAILED";
+};
 
 const defaultModalState: ModalState = {
   isOpen: false,
   step: "ORDER",
   state: "PENDING",
-}
+};
 
-export const UberPay = ({
-  bankCodes,
-  getQuote,
-  getOrder,
-}: UberPayProps) => {
+export const UberPay = ({ bankCodes, getQuote, getOrder }: UberPayProps) => {
   const [bankCode, setBankCode] = useState<string | null>(null);
   const [nameEnquiry, setNameEnquiry] = useState({
     loading: false,
@@ -85,11 +85,11 @@ export const UberPay = ({
     quoteInfo: null,
   });
 
-  const [order, setOrder] = useState<OrderState>(null)
+  const [order, setOrder] = useState<OrderState>(null);
 
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("INACTIVE")
-  const [payoutStatus, setPayoutStatus] = useState<PaymentStatus>("PENDING")
-  const [modalState, setModalState] = useState<ModalState>(defaultModalState)
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("INACTIVE");
+  const [payoutStatus, setPayoutStatus] = useState<PaymentStatus>("PENDING");
+  const [modalState, setModalState] = useState<ModalState>(defaultModalState);
 
   const toast = useToast();
 
@@ -109,11 +109,15 @@ export const UberPay = ({
       } else {
         throw new Error("Name not found for this account");
       }
-    } catch (err) {
-      console.error("err from acct name enq", err);
-      setNameEnquiry(prev => ({
-        ...prev, name: "", data: {}, error: "Unable to find account"
-      }))
+    } catch (err: any) {
+      // const errMessage = err?.response?.data?.message ?? "Unable to find account"
+      const errMessage = "Unable to find account"
+      setNameEnquiry({
+        name: "",
+        data: {},
+        error: errMessage,
+        loading: false,
+      });
     }
   };
 
@@ -165,7 +169,13 @@ export const UberPay = ({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const amount = e.target.value;
       if (amount) {
+        if (parseInt(amount) < 60) {
+          setQuote({loading: false, quoteInfo: {success: false, data: undefined, message: "Amount cannot be less than 60"}})
+          return
+        }
         calculateQuote(amount);
+      } else {
+        setQuote({loading: false, quoteInfo: null})
       }
     },
     DEBOUNCE_DELAY_QUOTE
@@ -174,12 +184,17 @@ export const UberPay = ({
   const debouncedEnquiry = useDebouncedCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
+      const acctNumberLength = e.target.value?.length ?? 0;
+      if (acctNumberLength !== 10) {
+        setNameEnquiry({ ...nameEnquiry, name: "", error: "Invalid account number", loading: false });
+        return;
+      }
       if (!value) {
         setBankError((prev) => ({
           ...prev,
           bankCode: "",
         }));
-        setNameEnquiry({ ...nameEnquiry, name: "", error: "" });
+        setNameEnquiry({ ...nameEnquiry, name: "", error: "", loading: false });
         return;
       }
       if (!bankCode) {
@@ -200,159 +215,177 @@ export const UberPay = ({
   );
 
   const handleBankSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const bankCode = e.target.value
+    if (bankCode) {
+      setBankError({
+        bankCode: ""
+      })
+    }
     setBankCode(e.target.value);
   };
 
   const handleAcceptQuote = async (formData: FormData) => {
-    const id = quote.quoteInfo?.data?.id
-    const accountNumber = formData?.get("accountNumber") as string
+    const id = quote.quoteInfo?.data?.id;
+    const accountNumber = formData?.get("accountNumber") as string;
     if (!id || !accountNumber) {
-      console.error("missing cred")
+      console.error("missing cred");
       return;
     }
     await getOrder({
       id,
       bankAccountName: nameEnquiry.name,
       bankAccountNumber: accountNumber,
-      bankCode: bankCode ?? ""
-    }).then(res => {
-      if (res.success && res.data) {
-        const orderData = {...res.data, quote: quote.quoteInfo?.data}
-        setOrder(orderData)
-        setModalState({
-          isOpen: true,
-          state: "PENDING",
-          step: "ORDER"
-        })
-        localStorage.setItem('order', JSON.stringify({...orderData, quote: quote.quoteInfo?.data}))
-        checkForPayment(orderData.orderId)
-      } else {
-        throw new Error(res.message ?? "Failed to create Order")
-      }
-    }).catch((err: any) => {
-      toast({
-        position: "top",
-        title: "Create Invoice",
-        description: err.message ?? "Failed to create Order",
-        status: "error",
-        duration: 6000,
-        isClosable: true,
-      });
+      bankCode: bankCode ?? "",
     })
-    
-  }
+      .then((res) => {
+        if (res.success && res.data) {
+          const orderData = { ...res.data, quote: quote.quoteInfo?.data };
+          setOrder(orderData);
+          setModalState({
+            isOpen: true,
+            state: "PENDING",
+            step: "ORDER",
+          });
+          localStorage.setItem(
+            "order",
+            JSON.stringify({ ...orderData, quote: quote.quoteInfo?.data })
+          );
+          checkForPayment(orderData.orderId);
+        } else {
+          throw new Error(res.message ?? "Failed to create Order");
+        }
+      })
+      .catch((err: any) => {
+        toast({
+          position: "top",
+          title: "Create Invoice",
+          description: err.message ?? "Failed to create Order",
+          status: "error",
+          duration: 6000,
+          isClosable: true,
+        });
+      });
+  };
 
   const updateOrderStatus = (status: Order["status"]) => {
-    const orderString = localStorage.getItem("order")
+    const orderString = localStorage.getItem("order");
     if (orderString) {
       try {
-        const order = JSON.parse(orderString) as Order & {quote: Quote["data"]}
-        setOrder({...order, status})
+        const order = JSON.parse(orderString) as Order & {
+          quote: Quote["data"];
+        };
+        setOrder({ ...order, status });
       } catch (err) {}
     }
-    setPaymentStatus("PAID")
+    setPaymentStatus("PAID");
     setModalState({
       isOpen: true,
       state: "PENDING",
-      step: "PAYOUT"
-    })
-  }
-
+      step: "PAYOUT",
+    });
+  };
 
   const checkForPayout = async (orderId: string, expiryTime?: string) => {
-    let shouldCheckForPayment = true
+    let shouldCheckForPayment = true;
     try {
-      const res = await getTxnByOrderId(orderId)
+      const res = await getTxnByOrderId(orderId);
       if (res.success && res.data) {
-        const withdrawal = res.data.find(txn => txn.type === "WITHDRAWAL")
+        const withdrawal = res.data.find((txn) => txn.type === "WITHDRAWAL");
         if (!withdrawal) {
-          shouldCheckForPayment = true
+          shouldCheckForPayment = true;
           return;
         }
-        const withdrawalMatchOrder = withdrawal.transactionMetadata.orderId == orderId
+        const withdrawalMatchOrder =
+          withdrawal.transactionMetadata.orderId == orderId;
         if (withdrawalMatchOrder) {
-          shouldCheckForPayment = false
+          shouldCheckForPayment = false;
           setModalState({
             isOpen: true,
             state: "PAID",
-            step: "PAYOUT"
-          })
+            step: "PAYOUT",
+          });
         } else {
-          shouldCheckForPayment = false
+          shouldCheckForPayment = false;
           // setPaymentStatus("EXPIRED")
           setModalState({
             isOpen: true,
             state: "FAILED",
-            step: "PAYOUT"
-          })
+            step: "PAYOUT",
+          });
         }
       }
     } catch (err) {
-      console.error(err)
-      shouldCheckForPayment = true
+      console.error(err);
+      shouldCheckForPayment = true;
     }
-    shouldCheckForPayment && setTimeout(async () => {
-      await checkForPayout(orderId)
-    }, POLLING_INTERVAL);
-  }
+    shouldCheckForPayment &&
+      setTimeout(async () => {
+        await checkForPayout(orderId);
+      }, POLLING_INTERVAL);
+  };
 
   const checkForPayment = async (orderId: string, expiryTime?: string) => {
-    let shouldCheckForPayment = true
+    let shouldCheckForPayment = true;
     try {
-      const res = await getOrderById(orderId)
+      const res = await getOrderById(orderId);
       if (res.success && res.data) {
         if (res.data.status === "PAID") {
-          shouldCheckForPayment = false
-          updateOrderStatus("PAID")
-          checkForPayout(orderId)
-          return
+          shouldCheckForPayment = false;
+          updateOrderStatus("PAID");
+          checkForPayout(orderId);
+          return;
         }
         if (res.data.status !== "PENDING") {
-          shouldCheckForPayment = false
+          shouldCheckForPayment = false;
           // setPaymentStatus("EXPIRED")
           setModalState({
             isOpen: true,
             state: "FAILED",
-            step: "ORDER"
-          })
+            step: "ORDER",
+          });
         }
       }
     } catch (err) {
-      console.error(err)
-      shouldCheckForPayment = true
+      console.error(err);
+      shouldCheckForPayment = true;
     }
-    shouldCheckForPayment && setTimeout(() => {
-      checkForPayment(orderId)
-    }, POLLING_INTERVAL);
-  }
+    shouldCheckForPayment &&
+      setTimeout(() => {
+        checkForPayment(orderId);
+      }, POLLING_INTERVAL);
+  };
 
   const reset = () => {
-    formRef.current && formRef.current.reset()
-    setBankCode(null)
+    formRef.current && formRef.current.reset();
+    setBankCode(null);
     setNameEnquiry({
       loading: false,
       name: "",
       data: {},
-      error: ""
-    })
+      error: "",
+    });
     setBankError({
-      bankCode: ""
-    })
-    setOrder(null)
-    setQuote({loading: false, quoteInfo: null})
-    setPaymentStatus("INACTIVE")
-    setPayoutStatus("INACTIVE")
-  }
+      bankCode: "",
+    });
+    setOrder(null);
+    setQuote({ loading: false, quoteInfo: null });
+    setPaymentStatus("INACTIVE");
+    setPayoutStatus("INACTIVE");
+  };
 
   const closeOrderModal = () => {
     // const {step, state} = modalState
-    setModalState(defaultModalState)
-    reset()
-  }
+    setModalState(defaultModalState);
+    reset();
+  };
 
   return (
     <>
-      <form ref={formRef} action={handleAcceptQuote} className="flex flex-col gap-4">
+      <form
+        ref={formRef}
+        action={handleAcceptQuote}
+        className="flex flex-col gap-4"
+      >
         <FormControl isInvalid={Boolean(bankError.bankCode)}>
           <FormLabel className="text-base">Select Bank</FormLabel>
           <Select
@@ -372,7 +405,14 @@ export const UberPay = ({
         </FormControl>
         <FormControl>
           <FormLabel className="text-base">Enter account number</FormLabel>
-          <Input ref={accountNumberRef} py="25px" type="number" name="accountNumber" onChange={debouncedEnquiry} isRequired />
+          <Input
+            ref={accountNumberRef}
+            py="25px"
+            type="number"
+            name="accountNumber"
+            onChange={debouncedEnquiry}
+            isRequired
+          />
           <div className="text-right pt-[15px]">
             {nameEnquiry.loading ? (
               <Spinner size="sm" color="gray.500" mr={2} />
@@ -395,6 +435,7 @@ export const UberPay = ({
               ref={amountRef}
               onChange={debounceCalculateQuote}
               isRequired
+              placeholder="Min amount 60 NGN"
             />
             <InputRightElement top="50%" className="translate-y-[-50%]">
               <Image src="naira.svg" width={18} height={18} alt="naira" />
@@ -402,12 +443,22 @@ export const UberPay = ({
           </InputGroup>
         </FormControl>
         <QuoteInfo loading={quote.loading} quote={quote.quoteInfo} />
-        <Button type="submit" colorScheme="orange" w="100%" className="bg-[#F2B246]">
+        <Button
+          type="submit"
+          colorScheme="orange"
+          w="100%"
+          className="bg-[#F2B246]"
+          isDisabled={!!bankError.bankCode || nameEnquiry.loading || !!nameEnquiry.error || !quote.quoteInfo?.success}
+        >
           Pay
         </Button>
       </form>
-      <OrderModal order={order} nameEnquiry={nameEnquiry} modalState={modalState} closeModal={closeOrderModal} />
+      <OrderModal
+        order={order}
+        nameEnquiry={nameEnquiry}
+        modalState={modalState}
+        closeModal={closeOrderModal}
+      />
     </>
   );
 };
-
