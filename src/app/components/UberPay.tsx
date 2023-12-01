@@ -293,25 +293,25 @@ export const UberPay = ({ bankCodes, getQuote, getOrder }: UberPayProps) => {
         const withdrawal = res.data.find((txn) => txn.type === "WITHDRAWAL");
         if (!withdrawal) {
           shouldCheckForPayment = true;
-          return;
-        }
-        const withdrawalMatchOrder =
-          withdrawal.transactionMetadata.orderId == orderId;
-        if (withdrawalMatchOrder) {
-          shouldCheckForPayment = false;
-          setModalState({
-            isOpen: true,
-            state: "PAID",
-            step: "PAYOUT",
-          });
         } else {
-          shouldCheckForPayment = false;
-          // setPaymentStatus("EXPIRED")
-          setModalState({
-            isOpen: true,
-            state: "FAILED",
-            step: "PAYOUT",
-          });
+          const withdrawalMatchOrder =
+            withdrawal.transactionMetadata.orderId == orderId;
+          if (withdrawalMatchOrder) {
+            shouldCheckForPayment = false;
+            setModalState({
+              isOpen: true,
+              state: "PAID",
+              step: "PAYOUT",
+            });
+          } else {
+            shouldCheckForPayment = false;
+            // setPaymentStatus("EXPIRED")
+            setModalState({
+              isOpen: true,
+              state: "FAILED",
+              step: "PAYOUT",
+            });
+          }
         }
       }
     } catch (err) {
@@ -319,8 +319,8 @@ export const UberPay = ({ bankCodes, getQuote, getOrder }: UberPayProps) => {
       shouldCheckForPayment = true;
     }
     shouldCheckForPayment &&
-      setTimeout(async () => {
-        await checkForPayout(orderId);
+      setTimeout(() => {
+        checkForPayout(orderId);
       }, POLLING_INTERVAL);
   };
 

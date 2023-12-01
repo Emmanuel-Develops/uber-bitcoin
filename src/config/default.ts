@@ -9,4 +9,4 @@ export const DEBOUNCE_DELAY = 1200;
 
 export const DEBOUNCE_DELAY_QUOTE = 600;
 
-export const POLLING_INTERVAL = 4000;
+export const POLLING_INTERVAL = 3000;
