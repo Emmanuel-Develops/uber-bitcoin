@@ -77,7 +77,7 @@ export default async function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <main className="flex min-h-screen flex-col items-center justify-between py-24 md:p-24">
       <div className="w-full max-w-[700px] border-2 border-[#EFF0F6] p-[38px]">
         <h2 className="font-semibold py-4 text-xl text-center">
           Pay for an Uber
