@@ -47,7 +47,9 @@ const OrderModal = ({
         ) : null}
 
         <ModalFooter>
-          <Button onClick={closeModal}>{modalState.state==="PAID" ? "Close" : "Cancel"}</Button>
+          <Button onClick={closeModal}>
+            {modalState.state === "PAID" ? "Close" : "Cancel"}
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
@@ -73,7 +75,13 @@ const OrderContent = ({
         <Box className="flex items-center justify-center mb-4">
           <Text>This Invoice expires in 5 minutes</Text>
         </Box>
-        <Box className="flex items-center justify-center">
+        <Box
+          className="flex items-center justify-center"
+          onClick={() => {
+            navigator.clipboard.writeText(order?.paymentBtcDetail!);
+            alert("Copied to clipboard");
+          }}
+        >
           <QRCode value={order?.paymentBtcDetail!} />
         </Box>
 
@@ -125,7 +133,9 @@ const PayoutContent = ({
       <ModalBody pb={3}>
         {modalState.state === "PENDING" && (
           <>
-            <p className="text-center font-semibold text-xl">Payment Confirmed</p>
+            <p className="text-center font-semibold text-xl">
+              Payment Confirmed
+            </p>
             <div className="my-4 md:my-6">
               Processing payout to{" "}
               <span className="font-medium text-gray-800">
@@ -141,9 +151,16 @@ const PayoutContent = ({
         {modalState.state === "PAID" && (
           <>
             <div className="relative flex justify-center w-full py-4">
-              <Image src="check.svg"width={50} height={50} alt="successful payment" />
+              <Image
+                src="check.svg"
+                width={50}
+                height={50}
+                alt="successful payment"
+              />
             </div>
-            <p className="text-center font-semibold text-xl">Payment Successful</p>
+            <p className="text-center font-semibold text-xl">
+              Payment Successful
+            </p>
             <div className="my-4 md:my-6 text-center">
               Successful payout to{" "}
               <span className="font-medium text-gray-800">
